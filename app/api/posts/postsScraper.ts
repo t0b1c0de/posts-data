@@ -37,9 +37,9 @@ export default async function handler(url: string) {
       .first();
 
     // Step 2: Within this section, find the element with the desired class
-    const targetElement = targetSection.find(
-      ".base-main-feed-card__entity-lockup"
-    );
+    const targetElement = targetSection
+      .find(".base-main-feed-card__entity-lockup")
+      .first();
 
     // Step 3: Extract and clean the text
     const extractedText = targetElement.text().trim();
