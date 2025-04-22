@@ -3,7 +3,7 @@ import * as cheerio from "cheerio";
 
 export interface ScrapedPost {
   author: string;
-  //   activity: string;
+  activity: string;
   //   body: string;
   //   before_seemore: string;
   //   media: ImagePost[];
@@ -12,7 +12,12 @@ export interface ScrapedPost {
   //   number_of_shares: number;
 }
 
-export default async function handler(url: string) {
+// interface ImagePost {
+//   image_url: string;
+//   image_alt: string;
+// }
+
+export default async function handler(url: string): Promise<ScrapedPost> {
   try {
     const response = await axios.get(url, {
       headers: {
@@ -29,31 +34,42 @@ export default async function handler(url: string) {
 
     // Get info from a specific html structure
 
-    // Step 1: Find the <article> that contains an <h1>
+    // Find the <article> that contains an <h1>
     const targetSection = $("section")
       .filter((_, el) => {
         return $(el).find("h1").length > 0;
       })
       .first();
 
-    // Step 2: Within this section, find the element with the desired class
+    // Get the name and the activity
     const targetElement = targetSection
       .find(".base-main-feed-card__entity-lockup")
       .first();
 
-    // Step 3: Extract and clean the text
-    const extractedText = targetElement.text().trim();
+    const author = targetElement
+      .find("a")
+      .filter((_, el) => {
+        return $(el).text().trim() !== "";
+      })
+      .text()
+      .trim();
 
-    const postInfo: ScrapedPost = {
-      author: extractedText,
-    };
+    const activity = targetElement.find("p").first().text().trim();
 
-    return postInfo;
-  } catch (error) {
-    console.error("Scraping error:", error);
     return {
-      success: false,
-      error: "An unknown error occurred",
+      author,
+      activity,
     };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      // Axios-specific error (e.g., network issues, non-2xx response)
+      throw new Error(`Axios error: ${error.message}`);
+    } else if (error instanceof Error) {
+      // Generic JS error
+      throw new Error(`Unexpected error: ${error.message}`);
+    } else {
+      // Fallback if error is not an Error object
+      throw new Error("An unknown error occurred");
+    }
   }
 }
