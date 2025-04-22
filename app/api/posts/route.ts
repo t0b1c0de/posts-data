@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
     // Parse the JSON body
     const body = await request.json();
 
+    // should validate the url if possible
+
     // Check if URL exists in the request body
     if (!body.url) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });

@@ -2,8 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 
 export interface ScrapedPost {
-  h1: string[];
-  //   author: string;
+  author: string;
   //   activity: string;
   //   body: string;
   //   before_seemore: string;
@@ -16,12 +15,6 @@ export interface ScrapedPost {
 export default async function handler(url: string) {
   try {
     const response = await axios.get(url, {
-      /*
-    // from claude ai
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    // from a tutorial
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
-    */
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -34,20 +27,32 @@ export default async function handler(url: string) {
 
     const $ = cheerio.load(response.data);
 
-    // Extract the <h1> elements to run the minimum test
-    const h1Elements: string[] = [];
-    $("h1").each((_, element) => {
-      h1Elements.push($(element).text().trim());
-    });
+    // Get info from a specific html structure
+
+    // Step 1: Find the <article> that contains an <h1>
+    const targetSection = $("section")
+      .filter((_, el) => {
+        return $(el).find("h1").length > 0;
+      })
+      .first();
+
+    // Step 2: Within this section, find the element with the desired class
+    const targetElement = targetSection.find(
+      ".base-main-feed-card__entity-lockup"
+    );
+
+    // Step 3: Extract and clean the text
+    const extractedText = targetElement.text().trim();
 
     const postInfo: ScrapedPost = {
-      h1: h1Elements,
+      author: extractedText,
     };
 
     return postInfo;
   } catch (error) {
     console.error("Scraping error:", error);
     return {
+      success: false,
       error: "An unknown error occurred",
     };
   }
