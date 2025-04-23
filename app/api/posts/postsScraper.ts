@@ -1,5 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import fs from "fs";
+import path from "path";
 
 export interface ScrapedPost {
   author: string;
@@ -29,6 +31,14 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       },
       timeout: 10000, // 10 seconds timeout for the request
     });
+
+    // Save HTML to file
+
+    const html = response.data;
+    const filePath = path.join(process.cwd(), "page-dump.html");
+    fs.writeFileSync(filePath, html, "utf-8");
+
+    console.log(`✅ HTML saved to ${filePath}`);
 
     const $ = cheerio.load(response.data);
 
@@ -67,7 +77,8 @@ export default async function handler(url: string): Promise<ScrapedPost> {
     const rawImages: ImagePost[] = targetSection
       .find(".w-main-feed-card-media img")
       .map((_, el) => {
-        let image_url = $(el).attr("src") || "";
+        let image_url =
+          $(el).attr("src") || $(el).attr("data-delayed-url") || "";
         image_url = image_url.replace(/&amp;/g, "&");
         return {
           image_url,
@@ -75,6 +86,8 @@ export default async function handler(url: string): Promise<ScrapedPost> {
         };
       })
       .get();
+
+    console.log("rawImages", rawImages);
 
     // Filter out truly "empty" images
     const images = rawImages.filter((img) => img.image_url !== "");
