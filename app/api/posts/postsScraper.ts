@@ -10,12 +10,12 @@ export interface ScrapedPost {
   medias: {
     images?: ImagePost[];
     videos?: string[];
-    pdfs?: string[];
+    pdfs?: string[]; // Getting more accuracy require user interactions
   };
-  //   number_of_comments: number;
-  //   number_of_likes: number; // get more details on it required user interaction
-  //   number_of_shares: number;
-  //   before_seemore: string; // same has the body?
+  number_of_reactions: number; // Getting more details require user interaction
+  number_of_comments: number;
+  //   number_of_shares: number; // It is not provided by the website
+  //   before_seemore: string; // Same as the body?
 }
 
 interface ImagePost {
@@ -131,6 +131,16 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       })
       .get();
 
+    // Get the number of reactions
+    const reactionCount = targetArticle
+      .find('span[data-test-id="social-actions__reaction-count"]')
+      .text();
+
+    // Get the number of comments
+    const number_of_comments = targetArticle
+      .find('a[data-test-id="social-actions__comments"]')
+      .text();
+
     return {
       author,
       activity,
@@ -140,6 +150,9 @@ export default async function handler(url: string): Promise<ScrapedPost> {
         ...(videos.length > 0 && { videos }),
         ...(pdfs.length > 0 && { pdfs }),
       },
+      number_of_reactions: parseInt(reactionCount.replace(/\D/g, ""), 10) || 0,
+      number_of_comments:
+        parseInt(number_of_comments.replace(/\D/g, ""), 10) || 0,
     };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
