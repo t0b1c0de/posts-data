@@ -43,6 +43,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if the pathname includes "/posts/"
+    if (!url.pathname.startsWith("/posts/")) {
+      return NextResponse.json(
+        { error: "Only url for posts are supported" },
+        { status: 400 }
+      );
+    }
+
     url.search = ""; // Remove query params
 
     // Call your scraper function
