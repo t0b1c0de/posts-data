@@ -28,7 +28,15 @@ export default async function handler(url: string): Promise<ScrapedPost> {
         "Accept-Language": "en-US,en;q=0.5",
       },
       timeout: 10000, // 10 seconds timeout for the request
+      validateStatus: () => true, // To accept all status codes
     });
+
+    // Check status errors from the response
+    if (response.status === 404) {
+      throw new Error("Page not found (404)");
+    } else if (response.status < 200 || response.status >= 300) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
 
     const $ = cheerio.load(response.data);
 
@@ -62,13 +70,18 @@ export default async function handler(url: string): Promise<ScrapedPost> {
     };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      // Axios-specific error (e.g., network issues, non-2xx response)
-      throw new Error(`Axios error: ${error.message}`);
+      if (error.response) {
+        throw new Error(
+          `Axios error: Received status code ${error.response.status}`
+        );
+      } else if (error.request) {
+        throw new Error("Axios error: No response received from the server");
+      } else {
+        throw new Error(`Axios error: ${error.message}`);
+      }
     } else if (error instanceof Error) {
-      // Generic JS error
       throw new Error(`Unexpected error: ${error.message}`);
     } else {
-      // Fallback if error is not an Error object
       throw new Error("An unknown error occurred");
     }
   }
