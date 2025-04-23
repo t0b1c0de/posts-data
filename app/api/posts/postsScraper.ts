@@ -93,7 +93,8 @@ export default async function handler(url: string): Promise<ScrapedPost> {
         try {
           const sources = JSON.parse(decodedData);
           if (Array.isArray(sources)) {
-            return sources.map((src: any) => src.src);
+            type Source = { src: string };
+            return (sources as Source[]).map((src) => src.src);
           }
         } catch (error) {
           console.error("Failed to parse video sources:", error);
