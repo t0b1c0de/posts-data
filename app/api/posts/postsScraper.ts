@@ -7,11 +7,12 @@ export interface ScrapedPost {
   author: string;
   activity: string;
   body: string;
-  //   before_seemore: string; // same has the body?
-  images?: ImagePost[];
+  images: ImagePost[];
+  videos: string[];
   //   number_of_comments: number;
   //   number_of_likes: number; // get more details on it required user interaction
   //   number_of_shares: number;
+  //   before_seemore: string; // same has the body?
 }
 
 interface ImagePost {
@@ -62,7 +63,7 @@ export default async function handler(url: string): Promise<ScrapedPost> {
 
     // Get the images
     const images: ImagePost[] = targetArticle
-      .find(".w-main-feed-card-media img") // Either direct or nested
+      .find(".w-main-feed-card-media img")
       .map((_, el) => {
         let image_url =
           $(el).attr("src") || $(el).attr("data-delayed-url") || "";
@@ -74,14 +75,34 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       })
       .get();
 
-    // Filter out truly "empty" images
-    // const images = rawImages.filter((img) => img.image_url !== "");
+    // Get the videos
+    const videos: string[] = targetArticle
+      .find("video")
+      .map((_, el) => {
+        const rawData = $(el).attr("data-sources") || "";
+        const decodedData = rawData
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, "&");
+
+        try {
+          const sources = JSON.parse(decodedData);
+          if (Array.isArray(sources)) {
+            return sources.map((src: any) => src.src);
+          }
+        } catch (error) {
+          console.error("Failed to parse video sources:", error);
+        }
+
+        return [];
+      })
+      .get();
 
     return {
       author,
       activity,
       body,
-      ...(images.length > 0 && { images }),
+      images,
+      videos,
     };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
