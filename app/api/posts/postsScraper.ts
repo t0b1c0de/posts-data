@@ -7,8 +7,11 @@ export interface ScrapedPost {
   author: string;
   activity: string;
   body: string;
-  images: ImagePost[];
-  videos: string[];
+  medias: {
+    images?: ImagePost[];
+    videos?: string[];
+    pdfs?: string[];
+  };
   //   number_of_comments: number;
   //   number_of_likes: number; // get more details on it required user interaction
   //   number_of_shares: number;
@@ -101,12 +104,42 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       })
       .get();
 
+    // Get the pdf links
+    const pdfs: string[] = targetArticle
+      .find("a")
+      .not(".comment a")
+      .filter((_, el) => {
+        // Get the href
+        const href = $(el).attr("href");
+
+        if (href) {
+          // Create a URL object from the href (relative to the base URL)
+          const urlObj = new URL(href, url);
+
+          // Remove query parameters and hash
+          urlObj.search = ""; // Remove query parameters
+          urlObj.hash = ""; // Remove hash
+
+          // Check if the cleaned URL ends with .pdf
+          return urlObj.pathname.endsWith(".pdf");
+        }
+        return false;
+      })
+      .map((_, el) => {
+        const href = $(el).attr("href");
+        return href ? new URL(href, url).toString() : "";
+      })
+      .get();
+
     return {
       author,
       activity,
       body,
-      images,
-      videos,
+      medias: {
+        ...(images.length > 0 && { images }),
+        ...(videos.length > 0 && { videos }),
+        ...(pdfs.length > 0 && { pdfs }),
+      },
     };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
