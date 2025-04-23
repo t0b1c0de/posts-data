@@ -7,8 +7,6 @@ export async function POST(request: NextRequest) {
     // Parse the JSON body
     const body = await request.json();
 
-    // should validate the url if possible
-
     // Check if URL exists in the request body
     if (!body.url) {
       return NextResponse.json(
@@ -18,9 +16,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate the URL format
-    if (!validate_url(body.url)) {
+    try {
+      new URL(body.url);
+    } catch (_) {
       return NextResponse.json(
-        { success: false, error: "Invalid URL format" },
+        { success: false, error: "Invalid url" },
         { status: 400 }
       );
     }
@@ -44,8 +44,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    url.search = ""; // Remove query params
+
     // Call your scraper function
-    const results = await handler(body.url);
+    const results = await handler(url.toString());
 
     // Return the results
     return NextResponse.json({ success: true, data: results });
@@ -60,10 +62,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function validate_url(url: string): boolean {
-  const urlPattern =
-    /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
-  return urlPattern.test(url);
 }
