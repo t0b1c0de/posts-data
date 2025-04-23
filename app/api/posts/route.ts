@@ -36,7 +36,6 @@ export async function POST(request: NextRequest) {
 
     // Check if the URL is from a specific domain
     const allowedDomains = process.env.ALLOWED_DOMAINS_FOR_IT?.split(",") ?? [];
-    console.log(url.hostname);
     if (!allowedDomains.includes(url.hostname)) {
       return NextResponse.json(
         { error: "Domain not supported" },

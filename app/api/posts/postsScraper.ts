@@ -5,17 +5,17 @@ export interface ScrapedPost {
   author: string;
   activity: string;
   body: string;
-  //   before_seemore: string;
-  //   media: ImagePost[];
+  //   before_seemore: string; // same has the body?
+  images?: ImagePost[];
   //   number_of_comments: number;
   //   number_of_likes: number; // get more details on it required user interaction
   //   number_of_shares: number;
 }
 
-// interface ImagePost {
-//   image_url: string;
-//   image_alt: string;
-// }
+interface ImagePost {
+  image_url: string;
+  image_alt?: string;
+}
 
 export default async function handler(url: string): Promise<ScrapedPost> {
   try {
@@ -63,10 +63,27 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       .text()
       .trim();
 
+    // Get the images
+    const rawImages: ImagePost[] = targetSection
+      .find(".w-main-feed-card-media img")
+      .map((_, el) => {
+        let image_url = $(el).attr("src") || "";
+        image_url = image_url.replace(/&amp;/g, "&");
+        return {
+          image_url,
+          image_alt: $(el).attr("alt") || undefined,
+        };
+      })
+      .get();
+
+    // Filter out truly "empty" images
+    const images = rawImages.filter((img) => img.image_url !== "");
+
     return {
       author,
       activity,
       body,
+      ...(images.length > 0 && { images }),
     };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
