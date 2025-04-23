@@ -1,16 +1,14 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import fs from "fs";
-import path from "path";
 
 export interface ScrapedPost {
   author: string;
   activity: string;
   body: string;
-  medias: {
+  media: {
     images?: ImagePost[];
     videos?: string[];
-    pdfs?: string[]; // Getting more accuracy require user interactions
+    pdfs?: string[]; // Getting more accuracies require user interactions
   };
   number_of_reactions: number; // Getting more details require user interaction
   number_of_comments: number;
@@ -28,6 +26,7 @@ export default async function handler(url: string): Promise<ScrapedPost> {
     const response = await axios.get(url, {
       headers: {
         "User-Agent":
+          process.env.NEXT_PUBLIC_USER_AGENT ||
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         Accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -145,7 +144,7 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       author,
       activity,
       body,
-      medias: {
+      media: {
         ...(images.length > 0 && { images }),
         ...(videos.length > 0 && { videos }),
         ...(pdfs.length > 0 && { pdfs }),
