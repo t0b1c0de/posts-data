@@ -63,7 +63,10 @@ export default async function handler(url: string): Promise<ScrapedPost> {
 
     // Get the images
     const images: ImagePost[] = targetArticle
-      .find(".w-main-feed-card-media img")
+      .find("img")
+      .not(
+        ".base-main-feed-card__entity-lockup img, .comment img, .main-feed-activity-card__social-actions img"
+      )
       .map((_, el) => {
         let image_url =
           $(el).attr("src") || $(el).attr("data-delayed-url") || "";
@@ -78,6 +81,7 @@ export default async function handler(url: string): Promise<ScrapedPost> {
     // Get the videos
     const videos: string[] = targetArticle
       .find("video")
+      .not(".comment video")
       .map((_, el) => {
         const rawData = $(el).attr("data-sources") || "";
         const decodedData = rawData
