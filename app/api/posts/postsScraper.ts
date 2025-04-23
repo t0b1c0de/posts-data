@@ -28,15 +28,7 @@ export default async function handler(url: string): Promise<ScrapedPost> {
         "Accept-Language": "en-US,en;q=0.5",
       },
       timeout: 10000, // 10 seconds timeout for the request
-      validateStatus: () => true, // To accept all status codes
     });
-
-    // Check status errors from the response
-    if (response.status === 404) {
-      throw new Error("Page not found (404)");
-    } else if (response.status < 200 || response.status >= 300) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
 
     const $ = cheerio.load(response.data);
 
@@ -70,19 +62,25 @@ export default async function handler(url: string): Promise<ScrapedPost> {
     };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
+      // Handle Axios specific errors
       if (error.response) {
+        // The server responded with a status code outside the 2xx range
         throw new Error(
-          `Axios error: Received status code ${error.response.status}`
+          `HTTP error ${error.response.status}: ${error.response.statusText}`
         );
       } else if (error.request) {
-        throw new Error("Axios error: No response received from the server");
+        // The request was made but no response was received
+        throw new Error("Network error: No response received from server");
       } else {
-        throw new Error(`Axios error: ${error.message}`);
+        // Something happened in setting up the request
+        throw new Error(`Request error: ${error.message}`);
       }
     } else if (error instanceof Error) {
-      throw new Error(`Unexpected error: ${error.message}`);
+      // For non-Axios errors, pass through the error message
+      throw error; // Rethrow the original error to preserve stack trace
     } else {
-      throw new Error("An unknown error occurred");
+      // For unknown errors
+      throw new Error(`Unknown error: ${String(error)}`);
     }
   }
 }
