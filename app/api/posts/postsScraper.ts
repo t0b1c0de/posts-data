@@ -32,29 +32,17 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       timeout: 10000, // 10 seconds timeout for the request
     });
 
-    // Save HTML to file
-
-    const html = response.data;
-    const filePath = path.join(process.cwd(), "page-dump.html");
-    fs.writeFileSync(filePath, html, "utf-8");
-
-    console.log(`✅ HTML saved to ${filePath}`);
-
     const $ = cheerio.load(response.data);
 
     // Get info from a specific html structure
 
     // Find the <article> that contains an <h1>
-    const targetSection = $("section")
-      .filter((_, el) => {
-        return $(el).find("h1").length > 0;
-      })
-      .first();
+    const targetArticle = $("article").first();
 
     // Get the name and the activity
-    const targetElement = targetSection
-      .find(".base-main-feed-card__entity-lockup")
-      .first();
+    const targetElement = targetArticle.find(
+      ".base-main-feed-card__entity-lockup"
+    );
 
     const author = targetElement
       .find("a")
@@ -67,15 +55,14 @@ export default async function handler(url: string): Promise<ScrapedPost> {
     const activity = targetElement.find("p").first().text().trim();
 
     // Get the body text
-    const body = targetSection
+    const body = targetArticle
       .find("p.attributed-text-segment-list__content")
-      .first()
       .text()
       .trim();
 
     // Get the images
-    const rawImages: ImagePost[] = targetSection
-      .find(".w-main-feed-card-media img")
+    const images: ImagePost[] = targetArticle
+      .find(".w-main-feed-card-media img") // Either direct or nested
       .map((_, el) => {
         let image_url =
           $(el).attr("src") || $(el).attr("data-delayed-url") || "";
@@ -87,10 +74,8 @@ export default async function handler(url: string): Promise<ScrapedPost> {
       })
       .get();
 
-    console.log("rawImages", rawImages);
-
     // Filter out truly "empty" images
-    const images = rawImages.filter((img) => img.image_url !== "");
+    // const images = rawImages.filter((img) => img.image_url !== "");
 
     return {
       author,
