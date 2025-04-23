@@ -4,7 +4,7 @@ import * as cheerio from "cheerio";
 export interface ScrapedPost {
   author: string;
   activity: string;
-  //   body: string;
+  body: string;
   //   before_seemore: string;
   //   media: ImagePost[];
   //   number_of_comments: number;
@@ -56,9 +56,17 @@ export default async function handler(url: string): Promise<ScrapedPost> {
 
     const activity = targetElement.find("p").first().text().trim();
 
+    // Get the body text
+    const body = targetSection
+      .find("p.attributed-text-segment-list__content")
+      .first()
+      .text()
+      .trim();
+
     return {
       author,
       activity,
+      body,
     };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
